@@ -1,0 +1,39 @@
+{
+    "manifest_version": 3,
+    "name": "ChordMaker",
+    "version": "1.0",
+    "description": "A simple Chrome extension to download worship chord sheets as pdfs from popular websites like tabs.ultimate-guitar.com, worshiptogether.com, and app.theworshipinitiative.com",
+    "content_scripts": [
+      {
+        "matches": ["<all_urls>"],
+        "js": ["content.js", "libs/jspdf.umd.min.js", "libs/purify.min.js", "libs/html2canvas.min.js"]
+      }
+    ],
+    "web_accessible_resources": [
+      {
+        "resources": ["libs/jspdf.umd.min.js", "libs/purify.min.js", "libs/html2canvas.min.js"],
+        "matches": ["<all_urls>"]
+      }
+    ],
+    "permissions": [
+      "activeTab",
+      "scripting"
+    ],
+    "background": {
+      "service_worker": "background.js"
+    },
+    "action": {
+      "default_popup": "popup.html",
+      "default_icon": {
+        "16": "icons/icon.png",
+        "48": "icons/icon.png",
+        "128": "icons/icon.png"
+      }
+    },
+    "icons": {
+      "16": "icons/icon.png",
+      "48": "icons/icon.png",
+      "128": "icons/icon.png"
+    }
+}
+  

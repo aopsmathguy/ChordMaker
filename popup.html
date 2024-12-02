@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ChordMaker</title>
+    <meta charset="utf-8">
+    <style>
+        body {
+            min-width: 150px;
+            min-height: 100px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            font-family: Arial, sans-serif;
+        }
+        button {
+            width: 50px;
+            height: 50px;
+            margin: 10px;
+            font-size: 24px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>ChordMaker</h1>
+    <button id="increase">+</button>
+    <button id="decrease">-</button>
+    <input type="number" id="columns" value="2" min="1" max="4">
+    <input type="number" id="maxWidth" value="50" min="10" max="100">
+    <button id="download">⬇</button>
+    <script src="popup.js"></script>
+</body>
+</html>
