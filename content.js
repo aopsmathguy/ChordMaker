@@ -330,7 +330,6 @@ var SongTabLine  = class{
             position += Math.max(chord.length, lyrics.length);
         }
         breakpoints.push([chordLyricPairs.length - 1, chordLyricPairs[chordLyricPairs.length - 1][1].length, position]);
-        console.log(this.toTexts(100), breakpoints);
         //greedily fit as much as possible into each line
         const newSplitLines = [];
         let lastBreakAccepted = 0;
@@ -437,7 +436,6 @@ function popUpPage(data) {
                     const chord = segment.querySelector('.chord-pro-note').innerText.trim();
                     
                     const chordSplit = chord.split(/[\s]+/);
-                    console.log(chordSplit);
                     const lyricElem = segment.querySelector('.chord-pro-lyric');
                     let lyrics;
                     if (lyricElem === null) lyrics = '';
@@ -582,7 +580,6 @@ function popUpPage(data) {
         }
     }
     song.splitLines(maxWidth);
-    console.log(song);
     const {
         textLines: textLines,
         width: songWidth,
