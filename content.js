@@ -390,7 +390,7 @@ function popUpPage(data) {
     const { columns, maxWidth } = data || { columns: 2, maxWidth: 50 };
     const keywords = ["chorus", "verse", "intro", "interlude", "outro", "bridge", "refrain", "pre-chorus", "post-chorus", "instrumental", "post chorus", "pre chorus", "tag", "turnaround", "breakdown", "final chord", "repeat", "ending"];
     const regex = new RegExp(`\\b(${keywords.join('|')})\\b`, 'i');
-                
+
     // Get the header, artist, title, key, and sections, then create a SongTab object
     let song;
     if (document.querySelector('.song-part-pages') !== null) {
@@ -527,7 +527,7 @@ function popUpPage(data) {
                 } 
                 const regex = /(\S+)([\s|\\]*)/g;
                 const newLine = new SongTabLine();
-                if (i == lines.length - 1 || classifications[i + 1] !== 'Lyric') {
+                if (i == lines.length - 1 || classifications[i + 1] === 'Chord Line' || classifications[i + 1] === 'Empty') {
                     // chords without lyrics
 
                     let leadingSpacesMatch = currLine.match(/^[\s|\\]+/); // Match leading spaces
