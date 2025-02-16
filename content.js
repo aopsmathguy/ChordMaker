@@ -661,7 +661,10 @@ function popUpPage(data) {
     pdf.setDrawColor(0, 0, 255);
     pdf.setLineWidth(0.5);
     pdf.line(margins + generatedByText.length * footnoteWidth, pdfHeight - margins + footnoteWidth * 0.2, margins + generatedByText.length * footnoteWidth + window.location.href.length * footnoteWidth, pdfHeight - margins + footnoteWidth * 0.2);
-    pdf.save(`${song.title} (${song.key}).pdf`);
+    // pdf.save(`${song.title} (${song.key}).pdf`);
+    const pdfBlob = pdf.output('blob');
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+    window.open(pdfUrl, '_blank');
 }
 
 
