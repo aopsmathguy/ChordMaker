@@ -219,7 +219,7 @@ var SongTabSection  = class{
     }
     toTexts(width) {
         width = width || this.getWidth();
-        let headerText = ("[" + this.header + "]").padEnd(width, " ");
+        let headerText = ("[b]" + this.header + "[/b]") + " ".repeat(width - this.header.length);
         let linesTexts = [];
         for (let i = 0; i < this.lines.length; i++) {
             const [chordTexts, lyricsTexts] = this.lines[i].toTexts(width);
@@ -232,8 +232,8 @@ var SongTabSection  = class{
         const newLines = [];
         
         // Ensure the header is within maxLineWidth by truncating if necessary
-        if (this.header.length > maxLineWidth - 2) {
-            this.header = this.header.slice(0, maxLineWidth - 2);
+        if (this.header.length > maxLineWidth) {
+            this.header = this.header.slice(0, maxLineWidth);
         }
     
         // Iterate over each existing line
@@ -387,7 +387,7 @@ function applyTransposeDown() {
 }
 function popUpPage(data) {
     const { columns, maxWidth } = data || { columns: 2, maxWidth: 50 };
-    const keywords = ["chorus", "verse", "intro", "interlude", "outro", "bridge", "refrain", "pre-chorus", "post-chorus", "instrumental", "post chorus", "pre chorus", "tag", "turnaround", "breakdown", "final chord", "repeat", "ending"];
+    const keywords = ["chorus", "verse", "intro", "interlude", "outro", "bridge", "refrain", "pre-chorus", "post-chorus", "instrumental", "post chorus", "pre chorus", "tag", "turnaround", "breakdown", "final chord", "repeat", "ending", "coda"];
     const regex = new RegExp(`\\b(${keywords.join('|')})\\b`, 'i');
 
     // Get the header, artist, title, key, and sections, then create a SongTab object
@@ -452,8 +452,9 @@ function popUpPage(data) {
             sections.push(currentSection);
         }
         song = new SongTab({ artist, title, sections });
-    } else if (document.querySelector('.Ctrll') !== null){
-        const mainParent = document.querySelector('.Ctrll');
+    } else if (document.querySelector('.CthJm') !== null){
+        //from tabs.ultimate-guitar.com
+        const mainParent = document.querySelector('.CthJm');
         const header = mainParent.querySelector('header.ryCTx.FiAaP');
         const title = header.querySelector('h1').innerText.trim();
         const artist = header.querySelector('span').innerText.trim();
@@ -628,7 +629,7 @@ function popUpPage(data) {
             pdf.setFontSize(fontSize + 2); // Increase font size for chords
             pdf.setFont('Helvetica', 'bold'); // Set font to bold
             pdf.setTextColor(255, 0, 0); // Set color to red
-            pdf.text(chord.replace(/\s/g, ' '), currentX, y + 1);
+            pdf.text(chord.replace(/\s/g, ' ').replace(/[^\x20-\x7E]/g, ' '), currentX, y + 1);
             currentX += chord.length * textWidth; // Move currentX forward
           } else if (part.startsWith('[b]') && part.endsWith('[/b]')) {
             // Bold text part
@@ -636,14 +637,14 @@ function popUpPage(data) {
             pdf.setFontSize(fontSize); // Reset font size
             pdf.setFont('Courier', 'bold'); // Set font to bold
             pdf.setTextColor(0, 0, 0); // Set color to black
-            pdf.text(boldText.replace(/\s/g, ' '), currentX, y);
+            pdf.text(boldText.replace(/\s/g, ' ').replace(/[^\x20-\x7E]/g, ' '), currentX, y);
             currentX += boldText.length * textWidth; // Move currentX forward
           } else {
             // Regular text part
             pdf.setFontSize(fontSize); // Reset font size
             pdf.setFont('Courier', 'normal'); // Set font to normal
             pdf.setTextColor(0, 0, 0); // Set color to black
-            pdf.text(part.replace(/\s/g, ' '), currentX, y);
+            pdf.text(part.replace(/\s/g, ' ').replace(/[^\x20-\x7E]/g, ' '), currentX, y);
             currentX += part.length * textWidth; // Move currentX forward
           }
         });
