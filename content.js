@@ -834,13 +834,13 @@ function popUpPage(data) {
             if (part.startsWith("[ch]") && part.endsWith("[/ch]")) {
                 // Chord part
                 const chord = part.slice(4, -5); // Remove [ch] and [/ch]
-                pdf.setFontSize(fontSize + 2); // Increase font size for chords
+                pdf.setFontSize(fontSize); // Increase font size for chords
                 pdf.setFont("RobotoMono", "bold"); // Set font to bold
                 pdf.setTextColor(chordColor[0], chordColor[1], chordColor[2]); // Set color to red
                 pdf.text(
                     chord.replace(/\s/g, " ").replace(/[^\x20-\x7E]/g, " "),
                     currentX,
-                    y + 1
+                    y
                 );
                 currentX += chord.length * textWidth; // Move currentX forward
             } else if (part.startsWith("[b]") && part.endsWith("[/b]")) {
