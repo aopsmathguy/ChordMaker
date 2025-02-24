@@ -211,7 +211,7 @@ var SongTab = class {
             let pushText = "";
             for (let col = 0; col < columns; col++) {
                 const columnText = columnTexts[col];
-                if (line < columnText.length) {
+                if (columnText && line < columnText.length) {
                     pushText += columnText[line];
                 } else {
                     pushText += " ".repeat(columnWidths[col]);
@@ -620,10 +620,12 @@ function popUpPage(data) {
             sections.push(currentSection);
         }
         song = new SongTab({ artist, title, sections });
-    } else if (document.querySelector(".CthJm") !== null) {
+    } else if (document.querySelector("main") !== null) {
         //from tabs.ultimate-guitar.com
-        const mainParent = document.querySelector(".CthJm");
-        const header = mainParent.querySelector("header.ryCTx.FiAaP");
+        const mainParent = document.querySelector("main");
+        const article = mainParent.children[2].children[1];
+        console.log(article);
+        const header = article.querySelector("header");
         const title = header.querySelector("h1").innerText.trim();
         const artist = header.querySelector("span").innerText.trim();
         const lines = mainParent
@@ -838,7 +840,7 @@ function popUpPage(data) {
                 pdf.setFont("RobotoMono", "bold"); // Set font to bold
                 pdf.setTextColor(chordColor[0], chordColor[1], chordColor[2]); // Set color to red
                 pdf.text(
-                    chord.replace(/\s/g, " ").replace(/[^\x20-\x7E]/g, " "),
+                    chord.replace(/\s/g, " "),
                     currentX,
                     y
                 );
@@ -850,7 +852,7 @@ function popUpPage(data) {
                 pdf.setFont("RobotoMono", "bold"); // Set font to bold
                 pdf.setTextColor(textColor[0], textColor[1], textColor[2]); // Set color to black
                 pdf.text(
-                    boldText.replace(/\s/g, " ").replace(/[^\x20-\x7E]/g, " "),
+                    boldText.replace(/\s/g, " "),
                     currentX,
                     y
                 );
@@ -861,7 +863,7 @@ function popUpPage(data) {
                 pdf.setFont("RobotoMono", "normal"); // Set font to normal
                 pdf.setTextColor(textColor[0], textColor[1], textColor[2]); // Set color to black
                 pdf.text(
-                    part.replace(/\s/g, " ").replace(/[^\x20-\x7E]/g, " "),
+                    part.replace(/\s/g, " "),
                     currentX,
                     y
                 );
