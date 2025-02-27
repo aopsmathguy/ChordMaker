@@ -7,8 +7,8 @@ const theme2 = document.getElementById('theme2');
 document.addEventListener('DOMContentLoaded', () => {
   
     // Load saved settings (if any)
-    columns.value = localStorage.getItem('columns') || 2;
-    maxWidth.value = localStorage.getItem('maxWidth') || 50;
+    columns.value = (localStorage.getItem('columns')) || 2;
+    maxWidth.value = (localStorage.getItem('maxWidth')) || 50;
     theme0.value = localStorage.getItem('theme0') || "#ffffff";
     theme1.value = localStorage.getItem('theme1') || "#000000";
     theme2.value = localStorage.getItem('theme2') || "#ff0000";  
@@ -65,5 +65,6 @@ document.getElementById('decrease').addEventListener('click', () => {
 });
 document.getElementById('download').addEventListener('click', () => {
     const theme = [hexToRgb(theme0.value), hexToRgb(theme1.value), hexToRgb(theme2.value)];
-    sendMessage('download', { columns: columns.value, maxWidth : maxWidth.value, theme: theme });
+    const data = { columns: parseInt(columns.value), maxWidth : parseInt(maxWidth.value), theme: theme }
+    sendMessage('download', data);
 });
