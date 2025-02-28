@@ -218,8 +218,13 @@ var SongTab = class {
                 } else {
                     pushText += " ".repeat(columnWidths[col]);
                 }
-                if (col < columns - 1 && (line < columnText.length || line < columnTexts[col + 1].length)) {
-                    pushText += "|";
+                if (col < columns - 1) {
+                    if (line < columnText.length || line < columnTexts[col + 1].length){
+                        pushText += "|";
+                    }
+                    else{
+                        pushText += " ";
+                    }
                 }
             }
             textLines.push(pushText);
@@ -290,8 +295,7 @@ var SongTabSection = class {
         );
     }
     getHeight() {
-        // 2 lines for each line in the section, plus 1 line for the header and 1 line for the space between sections
-        return 2 * this.lines.length + 2;
+        return this.lines.reduce((sum, line) => sum + line.getHeight(), 0) + 2;
     }
     toTexts(width) {
         width = width || this.getWidth();
@@ -302,9 +306,8 @@ var SongTabSection = class {
             " ".repeat(width - this.header.length - 2);
         let linesTexts = [];
         for (let i = 0; i < this.lines.length; i++) {
-            const [chordTexts, lyricsTexts] = this.lines[i].toTexts(width);
-            linesTexts.push(chordTexts);
-            linesTexts.push(lyricsTexts);
+            const texts = this.lines[i].toTexts(width);
+            linesTexts.push(...texts);
         }
         return [headerText, ...linesTexts, "_".repeat(width)];
     }
@@ -358,6 +361,9 @@ var SongTabLine = class {
             return sum + Math.max(pair[0].length, pair[1].length);
         }, 0);
     }
+    getHeight() {
+        return this.toTexts().length;
+    }
     toTexts(width) {
         width = width || this.getWidth();
         let chordTexts = "";
@@ -373,10 +379,16 @@ var SongTabLine = class {
             lyricsTexts += lyricsText;
             widthUsed += usedWidth;
         }
-        return [
+        let out = [
             chordTexts + " ".repeat(width - widthUsed),
             lyricsTexts + " ".repeat(width - widthUsed),
         ];
+        if (/^\s*$/.test(chordTexts)) {
+            out = [out[1]];
+        } else if (/^\s*$/.test(lyricsTexts)) {
+            out = [out[0]];
+        }
+        return out;
     }
     splitLines(maxLineWidth) {
         /* 
@@ -788,11 +800,11 @@ function popUpPage(data) {
     // Configure font size and family
     const fontSize = 12; // Adjust as needed
     const fontFamily = "RobotoMono"; // Monospaced font supported by jsPDF
-
+    const fontAspectRatio = 0.632; // Width-to-height ratio for the font
     // Split the song text into lines
     const lines = textLines; // songHeight-length array of strings
     // Measure text dimensions
-    const textWidth = fontSize * 0.632; // Width of a single line
+    const textWidth = fontSize * fontAspectRatio; // Width of a character
     const textHeight = fontSize * 1; // Line height, with a multiplier for spacing
     const totalWidth = songWidth * textWidth; // Total width required
     const totalHeight = songHeight * textHeight; // Total height required
@@ -876,7 +888,7 @@ function popUpPage(data) {
         });
     });
     const footnoteSize = 8;
-    const footnoteWidth = footnoteSize * 0.6;
+    const footnoteWidth = footnoteSize * fontAspectRatio;
     pdf.setFontSize(footnoteSize);
     pdf.setFont("RobotoMono", "normal");
     pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
