@@ -372,8 +372,14 @@ var SongTabLine = class {
         for (let i = 0; i < this.chordLyricPairs.length; i++) {
             const [chord, lyrics] = this.chordLyricPairs[i];
             const usedWidth = Math.max(chord.length, lyrics.length);
-            const chordText =
+            let chordText;
+            if (/^\s*$/.test(chord)){
+                chordText = " ".repeat(usedWidth);
+            }
+            else{
+                chordText =
                 `[ch]${chord}[/ch]` + " ".repeat(usedWidth - chord.length);
+            }
             const lyricsText = lyrics + " ".repeat(usedWidth - lyrics.length);
             chordTexts += chordText;
             lyricsTexts += lyricsText;
@@ -641,9 +647,10 @@ function popUpPage(data) {
         const mainParent = document.querySelector("main");
         const article = mainParent.children[2].children[1];
         console.log(article);
-        const header = article.querySelector("header");
-        const title = header.querySelector("h1").innerText.trim();
-        const artist = header.querySelector("span").innerText.trim();
+        const header = article.children[1].children[0].children[0].children[0];
+        console.log(header);
+        const title = header.children[0].innerText.trim()
+        const artist = header.children[2].innerText.trim()
         const lines = mainParent
             .querySelector("pre")
             .innerText.split("\n")
