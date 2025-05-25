@@ -645,16 +645,28 @@ function popUpPage(data) {
     } else if (document.querySelector("main") !== null) {
         //from tabs.ultimate-guitar.com
         const mainParent = document.querySelector("main");
-        const article = mainParent.children[2].children[1];
-        console.log(article);
-        const header = article.children[1].children[0].children[0].children[0];
-        console.log(header);
-        const title = header.children[0].innerText.trim()
-        const artist = header.children[2].innerText.trim()
-        const lines = mainParent
-            .querySelector("pre")
-            .innerText.split("\n")
+        const title = mainParent.querySelector('h1')?.textContent.trim() || '';
+
+        // ---------- ARTIST(S) ----------
+        const h1Wrapper     = mainParent.querySelector('h1')?.parentElement;
+        const artistNames   = h1Wrapper
+        ? [...h1Wrapper.querySelectorAll('a')]              // only <a> inside that wrapper
+            .map(a => a.textContent.trim())                // → ["Matt Boswell", "Matt Papa"]
+        : [];
+
+        const artist =
+        artistNames.length === 2
+            ? `${artistNames[0]} and ${artistNames[1]}`
+            : artistNames.join(', ');                        // fallback for 1 or >2 names
+
+        // ---------- CHORD SHEET ----------
+        // There’s only one <code><pre> block in the page – grab its plain text
+        const chordSheet = mainParent.querySelector('code pre')?.innerText.trim() || '';
+
+        console.log({title, artist, chordSheet})
+        const lines = chordSheet.split("\n")
             .map((line) => line.replace(/\r/g, ""));
+            
         const classifications = lines.map(function (line) {
             // Trim the line to remove leading and trailing whitespace
             const trimmedLine = line.trim();
