@@ -6,7 +6,7 @@
     "content_scripts": [
       {
         "matches": ["<all_urls>"],
-        "js": ["content.js", "libs/jspdf.umd.min.js", "libs/purify.min.js", "libs/html2canvas.min.js"]
+        "js": ["fonts.js", "content.js", "libs/jspdf.umd.min.js", "libs/purify.min.js", "libs/html2canvas.min.js"]
       }
     ],
     "web_accessible_resources": [

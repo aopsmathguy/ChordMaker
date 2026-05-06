@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(awk 'NR>=1 && NR<=80' /Users/min/MIT/ChordMaker-main/content.js)",
+      "Bash(awk 'length\\($0\\) < 500 {print NR\": \"$0}' /Users/min/MIT/ChordMaker-main/content.js)",
+      "Bash(awk 'NR==1 || NR==2 || NR==3 {print NR\": \"length\\($0\\)\" chars - first 100: \"substr\\($0,1,100\\)}' /Users/min/MIT/ChordMaker-main/content.js)",
+      "Bash(awk 'NR<=3 {print NR\": \"substr\\($0,1,80\\)}' content.js)",
+      "Bash(awk 'NR<=2 {print NR\": \"substr\\($0,1,80\\)\" | length=\"length\\($0\\)}' fonts.js)"
+    ]
+  }
+}
