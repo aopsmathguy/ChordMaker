@@ -3,16 +3,18 @@ const maxWidth = document.getElementById('maxWidth');
 const theme0 = document.getElementById('theme0');
 const theme1 = document.getElementById('theme1');
 const theme2 = document.getElementById('theme2');
+const preferFlats = document.getElementById('preferFlats');
 const preview = document.getElementById('preview');
 const status = document.getElementById('status');
 
-const SETTING_KEYS = ['columns', 'maxWidth', 'theme0', 'theme1', 'theme2'];
+const SETTING_KEYS = ['columns', 'maxWidth', 'theme0', 'theme1', 'theme2', 'preferFlats'];
 const DEFAULTS = {
     columns: 2,
     maxWidth: 50,
     theme0: '#ffffff',
     theme1: '#000000',
     theme2: '#ff0000',
+    preferFlats: false,
 };
 
 function hexToRgb(hex) {
@@ -30,6 +32,7 @@ function currentData() {
         columns: parseInt(columns.value),
         maxWidth: parseInt(maxWidth.value),
         theme: [hexToRgb(theme0.value), hexToRgb(theme1.value), hexToRgb(theme2.value)],
+        preferFlats: preferFlats.checked,
     };
 }
 
@@ -74,6 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
         theme0.value = stored.theme0;
         theme1.value = stored.theme1;
         theme2.value = stored.theme2;
+        preferFlats.checked = !!stored.preferFlats;
 
         const persistAndPreview = (el, key) => {
             el.addEventListener('change', () => {
@@ -86,6 +90,10 @@ document.addEventListener('DOMContentLoaded', () => {
         persistAndPreview(theme0, 'theme0');
         persistAndPreview(theme1, 'theme1');
         persistAndPreview(theme2, 'theme2');
+        preferFlats.addEventListener('change', () => {
+            chrome.storage.sync.set({ preferFlats: preferFlats.checked });
+            sendMessage('preview');
+        });
 
         sendMessage('preview');
     });

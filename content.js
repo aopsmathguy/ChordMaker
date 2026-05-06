@@ -125,6 +125,13 @@ var SongTab = class {
             this.sections[i].transpose(d, useFlats);
         }
     }
+    setSpelling(useFlats) {
+        // Respell every chord (and the key) in-place: d=0 keeps semitones, swaps the table.
+        this.key = transposeChord(this.key, 0, useFlats);
+        for (let i = 0; i < this.sections.length; i++) {
+            this.sections[i].transpose(0, useFlats);
+        }
+    }
     getSectionsWidth() {
         return this.sections.reduce((max, section) => {
             return Math.max(max, section.getWidth());
@@ -176,6 +183,7 @@ var SongTab = class {
 
     }
     toText(columns = 2, maxWidth = Infinity) {
+        columns = Math.min(columns, Math.max(this.sections.length, 1));
         // Wrap each section's lines at maxWidth without mutating the model.
         // Each entry is a render-only view: { header, lines, width, height }.
         const wrappedSections = this.sections.map((s) => {
@@ -188,7 +196,7 @@ var SongTab = class {
                 lines.push(...s.lines[i].splitLines(maxWidth));
             }
             const width = Math.max(
-                header.length,
+                header.length + 2,
                 lines.reduce((m, l) => Math.max(m, l.getWidth()), 0)
             );
             const height =
@@ -533,6 +541,7 @@ function parseSongFromPage() {
         "ending",
         "coda",
         "turn",
+        "pre"
     ];
     const regex = new RegExp(`\\b(${keywords.join("|")})\\b`, "i");
 
@@ -946,6 +955,9 @@ function handleAction(request, sendResponse) {
             song.transpose(1);
         } else if (request.action === "decrease") {
             song.transpose(-1);
+        }
+        if (request.data && typeof request.data.preferFlats === "boolean") {
+            song.setSpelling(request.data.preferFlats);
         }
         const pdf = renderSongToPdf(song, request.data);
         const dataUrl = pdf.output("dataurlstring");
