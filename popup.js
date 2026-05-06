@@ -6,7 +6,14 @@ const theme2 = document.getElementById('theme2');
 const preview = document.getElementById('preview');
 const status = document.getElementById('status');
 
-let currentPreviewUrl = null;
+const SETTING_KEYS = ['columns', 'maxWidth', 'theme0', 'theme1', 'theme2'];
+const DEFAULTS = {
+    columns: 2,
+    maxWidth: 50,
+    theme0: '#ffffff',
+    theme1: '#000000',
+    theme2: '#ff0000',
+};
 
 function hexToRgb(hex) {
     hex = hex.replace(/^#/, '');
@@ -26,19 +33,8 @@ function currentData() {
     };
 }
 
-function base64ToBlob(b64, type) {
-    const bytes = atob(b64);
-    const arr = new Uint8Array(bytes.length);
-    for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
-    return new Blob([arr], { type });
-}
-
-function showPreview(pdfBase64) {
-    const blob = base64ToBlob(pdfBase64, 'application/pdf');
-    const url = URL.createObjectURL(blob);
-    preview.src = url;
-    if (currentPreviewUrl) URL.revokeObjectURL(currentPreviewUrl);
-    currentPreviewUrl = url;
+function showPreview(pdfDataUrl) {
+    preview.src = pdfDataUrl;
     status.textContent = '';
 }
 
@@ -65,32 +61,34 @@ function sendMessage(action) {
                     status.textContent = response.error;
                     return;
                 }
-                if (response.pdfBase64) showPreview(response.pdfBase64);
+                if (response.pdfDataUrl) showPreview(response.pdfDataUrl);
             }
         );
     });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    columns.value = localStorage.getItem('columns') || 2;
-    maxWidth.value = localStorage.getItem('maxWidth') || 50;
-    theme0.value = localStorage.getItem('theme0') || "#ffffff";
-    theme1.value = localStorage.getItem('theme1') || "#000000";
-    theme2.value = localStorage.getItem('theme2') || "#ff0000";
+    chrome.storage.sync.get(DEFAULTS, (stored) => {
+        columns.value = stored.columns;
+        maxWidth.value = stored.maxWidth;
+        theme0.value = stored.theme0;
+        theme1.value = stored.theme1;
+        theme2.value = stored.theme2;
 
-    const persistAndPreview = (el, key) => {
-        el.addEventListener('change', () => {
-            localStorage.setItem(key, el.value);
-            sendMessage('preview');
-        });
-    };
-    persistAndPreview(columns, 'columns');
-    persistAndPreview(maxWidth, 'maxWidth');
-    persistAndPreview(theme0, 'theme0');
-    persistAndPreview(theme1, 'theme1');
-    persistAndPreview(theme2, 'theme2');
+        const persistAndPreview = (el, key) => {
+            el.addEventListener('change', () => {
+                chrome.storage.sync.set({ [key]: el.value });
+                sendMessage('preview');
+            });
+        };
+        persistAndPreview(columns, 'columns');
+        persistAndPreview(maxWidth, 'maxWidth');
+        persistAndPreview(theme0, 'theme0');
+        persistAndPreview(theme1, 'theme1');
+        persistAndPreview(theme2, 'theme2');
 
-    sendMessage('preview');
+        sendMessage('preview');
+    });
 });
 
 document.getElementById('increase').addEventListener('click', () => {
@@ -101,6 +99,6 @@ document.getElementById('decrease').addEventListener('click', () => {
     sendMessage('decrease');
 });
 
-document.getElementById('download').addEventListener('click', () => {
-    sendMessage('download');
+document.getElementById('openTab').addEventListener('click', () => {
+    sendMessage('openTab');
 });

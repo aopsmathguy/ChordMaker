@@ -1,54 +1,32 @@
-function transposeChord(chordStr, d) {
-    const noteToSemitone = {
-        "C": 0,
-        "C#": 1,
-        "Db": 1,
-        "D": 2,
-        "D#": 3,
-        "Eb": 3,
-        "E": 4,
-        "Fb": 4,
-        "E#": 5,
-        "F": 5,
-        "F#": 6,
-        "Gb": 6,
-        "G": 7,
-        "G#": 8,
-        "Ab": 8,
-        "A": 9,
-        "A#": 10,
-        "Bb": 10,
-        "B": 11,
-        "Cb": 11,
-        "B#": 0,
-    };
+const NOTE_TO_SEMITONE = {
+    "C": 0, "C#": 1, "Db": 1,
+    "D": 2, "D#": 3, "Eb": 3,
+    "E": 4, "Fb": 4, "E#": 5,
+    "F": 5, "F#": 6, "Gb": 6,
+    "G": 7, "G#": 8, "Ab": 8,
+    "A": 9, "A#": 10, "Bb": 10,
+    "B": 11, "Cb": 11, "B#": 0,
+};
+const SEMITONE_TO_SHARP = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+const SEMITONE_TO_FLAT  = ["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"];
+// Major keys conventionally written with flats (and the diatonic chord spellings within them).
+const FLAT_KEY_NAMES = new Set(["F","Bb","Eb","Ab","Db","Gb","Dm","Gm","Cm","Fm","Bbm","Ebm"]);
 
-    const semitoneToNote = {
-        0: "C",
-        1: "C#",
-        2: "D",
-        3: "D#",
-        4: "E",
-        5: "F",
-        6: "F#",
-        7: "G",
-        8: "G#",
-        9: "A",
-        10: "A#",
-        11: "B",
-    };
+function keyPrefersFlats(key) {
+    if (!key) return false;
+    return FLAT_KEY_NAMES.has(key.trim());
+}
 
+function transposeChord(chordStr, d, useFlats = false) {
+    const table = useFlats ? SEMITONE_TO_FLAT : SEMITONE_TO_SHARP;
     const noteRegex = /([A-G](?:#|b)?)/g;
-
-    const transposedChord = chordStr.replace(noteRegex, (match) => {
-        const semitone = noteToSemitone[match];
+    return chordStr.replace(noteRegex, (match) => {
+        const semitone = NOTE_TO_SEMITONE[match];
         if (semitone === undefined) return match;
         let newSemitone = (semitone + d) % 12;
         if (newSemitone < 0) newSemitone += 12;
-        return semitoneToNote[newSemitone];
+        return table[newSemitone];
     });
-
-    return transposedChord;
 }
 function keyDetect(chordOccurences) {
     // Remove chord variants and only preserve the root note and major/minor quality
@@ -83,7 +61,7 @@ function keyDetect(chordOccurences) {
     };
 
     let bestScore = 0;
-    let bestKey = undefined;
+    let bestKey = 0;
     for (let i = 0; i < 12; i++) {
         let score = 0;
         for (const chord in chordOccurencesWithoutVariants) {
@@ -97,7 +75,11 @@ function keyDetect(chordOccurences) {
             bestKey = i;
         }
     }
-    return transposeChord("C", -bestKey);
+    // F (5), Bb (10), Eb (3), Ab (8), Db (1), Gb (6) are conventionally written with flats.
+    const flatRoots = new Set([5, 10, 3, 8, 1, 6]);
+    const rootSemitone = (12 - bestKey) % 12;
+    const useFlats = flatRoots.has(rootSemitone) && rootSemitone !== 6; // F# more common than Gb
+    return (useFlats ? SEMITONE_TO_FLAT : SEMITONE_TO_SHARP)[rootSemitone];
 }
 var SongTab = class {
     constructor(opts) {
@@ -131,9 +113,16 @@ var SongTab = class {
         return copy;
     }
     transpose(d) {
-        this.key = transposeChord(this.key, d);
+        // Derive the new key with conventional spelling, then transpose chord bodies to match.
+        const oldKey = this.key;
+        const oldUseFlats = keyPrefersFlats(oldKey);
+        const newKeyTentative = transposeChord(oldKey, d, oldUseFlats);
+        const useFlats = keyPrefersFlats(newKeyTentative);
+        this.key = useFlats === oldUseFlats
+            ? newKeyTentative
+            : transposeChord(oldKey, d, useFlats);
         for (let i = 0; i < this.sections.length; i++) {
-            this.sections[i].transpose(d);
+            this.sections[i].transpose(d, useFlats);
         }
     }
     getSectionsWidth() {
@@ -141,8 +130,7 @@ var SongTab = class {
             return Math.max(max, section.getWidth());
         }, 0);
     }
-    computeAllocations(columns = 2) {
-        const sectionsHeights = this.sections.map((s) => s.getHeight());
+    computeAllocations(sectionsHeights, columns = 2) {
         function canSplit(maxSum) {
             let currentSum = 0;
             let count = 1; // We start with one subarray
@@ -187,25 +175,56 @@ var SongTab = class {
         return allocations;
 
     }
-    toText(columns = 2) {
+    toText(columns = 2, maxWidth = Infinity) {
+        // Wrap each section's lines at maxWidth without mutating the model.
+        // Each entry is a render-only view: { header, lines, width, height }.
+        const wrappedSections = this.sections.map((s) => {
+            const header =
+                s.header.length + 2 > maxWidth
+                    ? s.header.slice(0, maxWidth - 2)
+                    : s.header;
+            const lines = [];
+            for (let i = 0; i < s.lines.length; i++) {
+                lines.push(...s.lines[i].splitLines(maxWidth));
+            }
+            const width = Math.max(
+                header.length,
+                lines.reduce((m, l) => Math.max(m, l.getWidth()), 0)
+            );
+            const height =
+                lines.reduce((sum, l) => sum + l.getHeight(), 0) + 2;
+            return { header, lines, width, height };
+        });
         // Calculate how many sections in each column
-        const allocations = this.computeAllocations(columns);
+        const allocations = this.computeAllocations(
+            wrappedSections.map((s) => s.height),
+            columns
+        );
         // Create the text for each column
-        const columnWidths = allocations.map((sectionIndices, col) => {
+        const columnWidths = allocations.map((sectionIndices) => {
             return sectionIndices.reduce(
-                (max, i) => Math.max(max, this.sections[i].getWidth()),
+                (max, i) => Math.max(max, wrappedSections[i].width),
                 0
             );
         });
         const columnTexts = allocations.map((sectionIndices, col) => {
-            let columnText = [];
+            const columnText = [];
             const columnWidth = columnWidths[col];
             for (let j = 0; j < sectionIndices.length; j++) {
-                const sectionTexts =
-                    this.sections[sectionIndices[j]].toTexts(columnWidth);
-                for (let i = 0; i < sectionTexts.length; i++) {
-                    columnText.push(sectionTexts[i]);
+                const s = wrappedSections[sectionIndices[j]];
+                columnText.push(
+                    "[b][" +
+                        s.header +
+                        "][/b]" +
+                        " ".repeat(columnWidth - s.header.length - 2)
+                );
+                for (let i = 0; i < s.lines.length; i++) {
+                    const lineTexts = s.lines[i].toTexts(columnWidth);
+                    for (let k = 0; k < lineTexts.length; k++) {
+                        columnText.push(lineTexts[k]);
+                    }
                 }
+                columnText.push("_".repeat(columnWidth));
             }
             return columnText;
         });
@@ -250,11 +269,6 @@ var SongTab = class {
             height: height,
         };
     }
-    splitLines(maxLineWidth) {
-        for (let i = 0; i < this.sections.length; i++) {
-            this.sections[i].splitLines(maxLineWidth);
-        }
-    }
     set key(value) {
         this._key = value;
     }
@@ -293,9 +307,9 @@ var SongTabSection = class {
     addLine(line) {
         this.lines.push(line);
     }
-    transpose(d) {
+    transpose(d, useFlats = false) {
         for (let i = 0; i < this.lines.length; i++) {
-            this.lines[i].transpose(d);
+            this.lines[i].transpose(d, useFlats);
         }
     }
     getWidth() {
@@ -323,24 +337,6 @@ var SongTabSection = class {
         }
         return [headerText, ...linesTexts, "_".repeat(width)];
     }
-    splitLines(maxLineWidth) {
-        const newLines = [];
-
-        // Ensure the header is within maxLineWidth by truncating if necessary
-        if (this.header.length + 2> maxLineWidth) {
-            this.header = this.header.slice(0, maxLineWidth - 2);
-        }
-
-        // Iterate over each existing line
-        for (let i = 0; i < this.lines.length; i++) {
-            const line = this.lines[i];
-            const splitLines = line.splitLines(maxLineWidth);
-            newLines.push(...splitLines);
-        }
-
-        // Update the lines with the newly split lines
-        this.lines = newLines;
-    }
 };
 var SongTabLine = class {
     constructor(opts) {
@@ -360,11 +356,12 @@ var SongTabLine = class {
             this.chordLyricPairs.push(pair);
         }
     }
-    transpose(d) {
+    transpose(d, useFlats = false) {
         for (let i = 0; i < this.chordLyricPairs.length; i++) {
             this.chordLyricPairs[i][0] = transposeChord(
                 this.chordLyricPairs[i][0],
-                d
+                d,
+                useFlats
             );
         }
     }
@@ -513,23 +510,6 @@ var SongTabLine = class {
     }
 };
 
-// Function to apply the current font size to all paragraphs
-function applyTransposeUp() {
-    const chords = document.querySelectorAll(
-        "td.chord, .matchedChordContainer"
-    );
-    chords.forEach((c) => {
-        c.innerHTML = transposeChord(c.innerHTML, 1);
-    });
-}
-function applyTransposeDown() {
-    const chords = document.querySelectorAll(
-        "td.chord, .matchedChordContainer"
-    );
-    chords.forEach((c) => {
-        c.innerHTML = transposeChord(c.innerHTML, -1);
-    });
-}
 function parseSongFromPage() {
     const keywords = [
         "chorus",
@@ -558,8 +538,8 @@ function parseSongFromPage() {
 
     // Get the header, artist, title, key, and sections, then create a SongTab object
     let song;
-    if (document.querySelector(".song-part-pages") !== null) {
-        //from website theworshipinitiative.com
+    const host = window.location.hostname;
+    if (host === "app.theworshipinitiative.com") {
         const header = document.querySelector(".song-part-header-content");
         const [artist, title] = [
             header.querySelector("h4"),
@@ -583,8 +563,7 @@ function parseSongFromPage() {
             return { header, lines };
         });
         song = new SongTab({ artist, title, sections });
-    } else if (document.querySelector(".chordProContainer") !== null) {
-        //from website worshiptogether.com
+    } else if (host === "www.worshiptogether.com" || host === "worshiptogether.com") {
         const songDetails = document.querySelector(".t-song-details__marquee");
         const title = songDetails
             .querySelector("h1.t-song-details__marquee__headline")
@@ -644,8 +623,7 @@ function parseSongFromPage() {
             sections.push(currentSection);
         }
         song = new SongTab({ artist, title, sections });
-    } else if (document.querySelector("main") !== null) {
-        //from tabs.ultimate-guitar.com
+    } else if (host === "tabs.ultimate-guitar.com") {
         const mainParent = document.querySelector("main");
         const title = mainParent.querySelector('h1')?.textContent.trim() || '';
 
@@ -812,7 +790,7 @@ function parseSongFromPage() {
     return song;
 }
 
-function renderSongToPdf(originalSong, data) {
+function renderSongToPdf(song, data) {
     const { columns, maxWidth, theme } = data || {
         columns: 2,
         maxWidth: 50,
@@ -822,13 +800,11 @@ function renderSongToPdf(originalSong, data) {
             [255, 0, 0],
         ],
     };
-    const song = originalSong.clone();
-    song.splitLines(maxWidth);
     const {
         textLines: textLines,
         width: songWidth,
         height: songHeight,
-    } = song.toText(columns);
+    } = song.toText(columns, maxWidth);
     // Ensure jsPDF is loaded
     const { jsPDF } = window.jspdf;
 
@@ -959,12 +935,6 @@ function getOrParseSong() {
     return song;
 }
 
-function pdfToBase64(pdf) {
-    const dataUrl = pdf.output("dataurlstring");
-    const comma = dataUrl.indexOf(",");
-    return comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
-}
-
 function handleAction(request, sendResponse) {
     try {
         const song = getOrParseSong();
@@ -978,24 +948,19 @@ function handleAction(request, sendResponse) {
             song.transpose(-1);
         }
         const pdf = renderSongToPdf(song, request.data);
-        if (request.action === "download") {
-            const pdfBlob = pdf.output("blob");
-            const pdfUrl = URL.createObjectURL(pdfBlob);
-            window.open(pdfUrl, "_window");
+        const dataUrl = pdf.output("dataurlstring");
+        if (request.action === "openTab") {
+            const blobUrl = URL.createObjectURL(pdf.output("blob"));
+            window.open(blobUrl, "_blank");
         }
-        sendResponse({ pdfBase64: pdfToBase64(pdf) });
+        sendResponse({ pdfDataUrl: dataUrl });
     } catch (e) {
         console.error(e);
         sendResponse({ error: e && e.message ? e.message : String(e) });
     }
 }
 
-// Listen for messages from the background script only once
-
-if (!window.hasAddedListener) {
-    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-        handleAction(request, sendResponse);
-        return true;
-    });
-    window.hasAddedListener = true;
-}
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    handleAction(request, sendResponse);
+    return true;
+});

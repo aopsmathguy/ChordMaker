@@ -5,7 +5,13 @@
       "Bash(awk 'length\\($0\\) < 500 {print NR\": \"$0}' /Users/min/MIT/ChordMaker-main/content.js)",
       "Bash(awk 'NR==1 || NR==2 || NR==3 {print NR\": \"length\\($0\\)\" chars - first 100: \"substr\\($0,1,100\\)}' /Users/min/MIT/ChordMaker-main/content.js)",
       "Bash(awk 'NR<=3 {print NR\": \"substr\\($0,1,80\\)}' content.js)",
-      "Bash(awk 'NR<=2 {print NR\": \"substr\\($0,1,80\\)\" | length=\"length\\($0\\)}' fonts.js)"
+      "Bash(awk 'NR<=2 {print NR\": \"substr\\($0,1,80\\)\" | length=\"length\\($0\\)}' fonts.js)",
+      "Bash(git add *)",
+      "Bash(GIT_EDITOR=true git cherry-pick --continue)",
+      "Bash(node --check /Users/min/MIT/ChordMaker-main/content.js)",
+      "Bash(node --check /Users/min/MIT/ChordMaker-main/background.js)",
+      "Bash(node --check /Users/min/MIT/ChordMaker-main/popup.js)",
+      "Bash(python3 -c \"import json; json.load\\(open\\('/Users/min/MIT/ChordMaker-main/manifest.json'\\)\\)\")"
     ]
   }
 }
