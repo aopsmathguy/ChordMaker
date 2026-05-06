@@ -547,7 +547,7 @@ function parseSongFromPage() {
         ].map((c) => c.innerText.trim());
         const sectionElems = document.querySelectorAll(".chord-chart-section");
         const sections = [...sectionElems].map((s) => {
-            const header = s.querySelector("h4").innerText.trim();
+            const header = s.querySelector("h4").innerText.trim() || "UNKNOWN";
             const lines = [...s.querySelectorAll("table")].map((l) => {
                 const chords = [...l.querySelectorAll("td.chord")].map(
                     (c) => c.innerText.trim() + " "
@@ -593,6 +593,9 @@ function parseSongFromPage() {
                     currentSection.lines.length > 0 ||
                     currentSection.header !== ""
                 ) {
+                    if (currentSection.header === "") {
+                        currentSection.header = "UNKNOWN";
+                    }
                     sections.push(currentSection);
                 }
                 currentSection = new SongTabSection({
@@ -620,6 +623,9 @@ function parseSongFromPage() {
             }
         }
         if (currentSection.lines.length > 0 || currentSection.header !== "") {
+            if (currentSection.header === "") {
+                currentSection.header = "UNKNOWN";
+            }
             sections.push(currentSection);
         }
         song = new SongTab({ artist, title, sections });
@@ -702,12 +708,12 @@ function parseSongFromPage() {
             return "Lyric";
         });
         song = new SongTab({ title, artist });
-        let currentSection = undefined;
+        let currentSection = new SongTabSection({ header: "UNKNOWN" });
         for (let i = 0; i < lines.length - 1; i++) {
             const currLine = lines[i];
             const currClass = classifications[i];
             if (currClass === "Section Header") {
-                if (currentSection !== undefined) {
+                if (currentSection.lines.length > 0) {
                     song.addSection(currentSection);
                 }
                 //remove [ and ] from the header if they exist
@@ -715,9 +721,6 @@ function parseSongFromPage() {
                     header: currLine.replace(/[\[\]]/g, ""),
                 });
             } else if (currClass === "Chord Line") {
-                if (currentSection === undefined) {
-                    continue;
-                }
                 const regex = /(\S+)([\s|\\]*)/g;
                 const newLine = new SongTabLine();
                 if (
@@ -775,15 +778,12 @@ function parseSongFromPage() {
                 }
                 currentSection.addLine(newLine);
             } else if (currClass === "Lyric") {
-                if (currentSection === undefined) {
-                    continue;
-                }
                 const newLine = new SongTabLine();
                 newLine.addPair(["", currLine]);
                 currentSection.addLine(newLine);
             }
         }
-        if (currentSection !== undefined) {
+        if (currentSection.lines.length > 0) {
             song.addSection(currentSection);
         }
     }
