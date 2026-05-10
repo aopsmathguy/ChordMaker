@@ -17,7 +17,13 @@ function keyPrefersFlats(key) {
     return FLAT_KEY_NAMES.has(key.trim());
 }
 
+// "No chord" markers (NC, N.C., N.C, NC., N/C, ...) — preserved verbatim through transposition.
+const NO_CHORD_REGEX = /^\s*N[.\/]?C\.?\s*$/i;
+function isNoChord(chordStr) {
+    return NO_CHORD_REGEX.test(chordStr);
+}
 function transposeChord(chordStr, d, useFlats = false) {
+    if (isNoChord(chordStr)) return chordStr;
     const table = useFlats ? SEMITONE_TO_FLAT : SEMITONE_TO_SHARP;
     const noteRegex = /([A-G](?:#|b)?)/g;
     return chordStr.replace(noteRegex, (match) => {
@@ -681,8 +687,8 @@ function parseSongFromPage() {
             const chordRegex =
                 /^[A-G][#b]?((m|maj|min|dim|aug|sus\d?|add\d?|maj7|m7|dim7|aug7|7|9|11|13|2|4|6)?)?(\/[A-G][#b]?)?$/i;
 
-            // Regex to match "N.C."
-            const noChordRegex = /^N\.C\.$/i;
+            // Regex to match "no chord" markers (NC, N.C., N.C, NC., N/C, ...)
+            const noChordRegex = NO_CHORD_REGEX;
 
             // 3. Split the line into tokens based on whitespace and common delimiters
             const tokens = trimmedLine.split(/[\s|\/]+/); // Splits on spaces, pipes, or slashes
