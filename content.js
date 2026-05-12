@@ -131,6 +131,25 @@ var SongTab = class {
             this.sections[i].transpose(d, useFlats);
         }
     }
+    transposeToKey(targetKey) {
+        const targetMatch = (targetKey || "").match(/^([A-G])(#|b)?/);
+        if (!targetMatch) return;
+        const targetRoot = targetMatch[1] + (targetMatch[2] || "");
+        const targetSemi = NOTE_TO_SEMITONE[targetRoot];
+        if (targetSemi === undefined) return;
+        const currentMatch = (this.key || "C").match(/^([A-G])(#|b)?/);
+        const currentRoot = currentMatch ? currentMatch[1] + (currentMatch[2] || "") : "C";
+        const currentSemi = NOTE_TO_SEMITONE[currentRoot] ?? 0;
+        const d = ((targetSemi - currentSemi) % 12 + 12) % 12;
+        let useFlats;
+        if (targetMatch[2] === 'b') useFlats = true;
+        else if (targetMatch[2] === '#') useFlats = false;
+        else useFlats = keyPrefersFlats(targetRoot);
+        for (let i = 0; i < this.sections.length; i++) {
+            this.sections[i].transpose(d, useFlats);
+        }
+        this.key = targetKey;
+    }
     setSpelling(useFlats) {
         // Respell every chord (and the key) in-place: d=0 keeps semitones, swaps the table.
         this.key = transposeChord(this.key, 0, useFlats);
@@ -245,9 +264,22 @@ var SongTab = class {
         // Create the text for the whole page
         let lineWidth = columns - 1 + columnWidths.reduce((sum, w) => sum + w, 0);
         console.log(lineWidth,columnWidths, columns);
+        let capoText = "";
+        if (this.originalKey) {
+            const origMatch = this.originalKey.match(/^([A-G])(#|b)?/);
+            const curMatch = (this.key || "").match(/^([A-G])(#|b)?/);
+            if (origMatch && curMatch) {
+                const origSemi = NOTE_TO_SEMITONE[origMatch[1] + (origMatch[2] || "")];
+                const curSemi = NOTE_TO_SEMITONE[curMatch[1] + (curMatch[2] || "")];
+                if (origSemi !== undefined && curSemi !== undefined) {
+                    const capo = ((origSemi - curSemi) % 12 + 12) % 12;
+                    capoText = ` (capo ${capo})`;
+                }
+            }
+        }
         let textLines = [
             `[b]${this.title}[/b] - ${this.artist}`,
-            `Key: [ch]${this.key}[/ch]`,
+            `Key: [ch]${this.key}[/ch]${capoText}`,
             "_".repeat(lineWidth),
         ];
         const maxColumnHeight = columnTexts.reduce(
@@ -945,9 +977,39 @@ function getOrParseSong() {
         return window.cachedSong;
     }
     const song = parseSongFromPage();
+    if (song && !song.originalKey) {
+        song.originalKey = song.key;
+    }
     window.cachedSong = song;
     window.cachedSongUrl = window.location.href;
     return song;
+}
+
+function buildKeyOptions(originalKey) {
+    const m = (originalKey || "C").match(/^([A-G])(#|b)?/);
+    if (!m) return [];
+    const root = m[1] + (m[2] || "");
+    const originalSemi = NOTE_TO_SEMITONE[root];
+    if (originalSemi === undefined) return [];
+    let flatFirst;
+    if (m[2] === 'b') flatFirst = true;
+    else if (m[2] === '#') flatFirst = false;
+    else flatFirst = keyPrefersFlats(root);
+    const options = [];
+    for (let capo = 0; capo < 12; capo++) {
+        const semi = ((originalSemi - capo) % 12 + 12) % 12;
+        const sharpName = SEMITONE_TO_SHARP[semi];
+        const flatName = SEMITONE_TO_FLAT[semi];
+        if (sharpName === flatName) {
+            options.push({ value: sharpName, label: `${sharpName} (capo ${capo})` });
+        } else {
+            const first = flatFirst ? flatName : sharpName;
+            const second = flatFirst ? sharpName : flatName;
+            options.push({ value: first, label: `${first} (capo ${capo})` });
+            options.push({ value: second, label: `${second} (capo ${capo})` });
+        }
+    }
+    return options;
 }
 
 function handleAction(request, sendResponse) {
@@ -961,8 +1023,11 @@ function handleAction(request, sendResponse) {
             song.transpose(1);
         } else if (request.action === "decrease") {
             song.transpose(-1);
+        } else if (request.action === "setKey" && request.targetKey) {
+            song.transposeToKey(request.targetKey);
         }
-        if (request.data && typeof request.data.preferFlats === "boolean") {
+        // setKey carries its own spelling; don't let preferFlats override it.
+        if (request.action !== "setKey" && request.data && typeof request.data.preferFlats === "boolean") {
             song.setSpelling(request.data.preferFlats);
         }
         const pdf = renderSongToPdf(song, request.data);
@@ -971,7 +1036,12 @@ function handleAction(request, sendResponse) {
             const blobUrl = URL.createObjectURL(pdf.output("blob"));
             window.open(blobUrl, "_blank");
         }
-        sendResponse({ pdfDataUrl: dataUrl });
+        sendResponse({
+            pdfDataUrl: dataUrl,
+            originalKey: song.originalKey || song.key,
+            currentKey: song.key,
+            keyOptions: buildKeyOptions(song.originalKey || song.key),
+        });
     } catch (e) {
         console.error(e);
         sendResponse({ error: e && e.message ? e.message : String(e) });

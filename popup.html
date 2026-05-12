@@ -44,6 +44,12 @@
             padding: 0;
             border: 1px solid #ccc;
         }
+        select#keySelect {
+            height: 32px;
+            margin: 4px;
+            font-size: 14px;
+            font-family: ui-monospace, Menlo, Consolas, monospace;
+        }
         .container {
             display: flex;
             flex-direction: row;
@@ -76,6 +82,7 @@
     <div class = "container">
         <button id="increase">+</button>
         <button id="decrease">-</button>
+        <select id="keySelect"></select>
         <input type="number" id="columns" value="2" min="1" max="4">
         <input type="number" id="maxWidth" value="50" min="10" max="100">
         <input type="color" id="theme0" value="#ffffff">

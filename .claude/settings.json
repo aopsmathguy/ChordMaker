@@ -11,7 +11,10 @@
       "Bash(node --check /Users/min/MIT/ChordMaker-main/content.js)",
       "Bash(node --check /Users/min/MIT/ChordMaker-main/background.js)",
       "Bash(node --check /Users/min/MIT/ChordMaker-main/popup.js)",
-      "Bash(python3 -c \"import json; json.load\\(open\\('/Users/min/MIT/ChordMaker-main/manifest.json'\\)\\)\")"
+      "Bash(python3 -c \"import json; json.load\\(open\\('/Users/min/MIT/ChordMaker-main/manifest.json'\\)\\)\")",
+      "Bash(awk 'length\\($0\\) < 500 { print NR\": \"$0 }' /Users/min/MIT/ChordMaker-main/fonts.js)",
+      "Bash(awk '{ print NR\": length=\"length\\($0\\)\" start=\"substr\\($0,1,60\\) }' /Users/min/MIT/ChordMaker-main/fonts.js)",
+      "Bash(node font-aspect-ratios.js)"
     ]
   }
 }

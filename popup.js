@@ -4,6 +4,7 @@ const theme0 = document.getElementById('theme0');
 const theme1 = document.getElementById('theme1');
 const theme2 = document.getElementById('theme2');
 const preferFlats = document.getElementById('preferFlats');
+const keySelect = document.getElementById('keySelect');
 const preview = document.getElementById('preview');
 const status = document.getElementById('status');
 
@@ -41,7 +42,25 @@ function showPreview(pdfDataUrl) {
     status.textContent = '';
 }
 
-function sendMessage(action) {
+function rebuildKeyOptions(options, currentKey) {
+    if (!options || !options.length) return;
+    const signature = options.map((o) => o.value).join(',');
+    if (keySelect.dataset.signature !== signature) {
+        keySelect.innerHTML = '';
+        for (const opt of options) {
+            const el = document.createElement('option');
+            el.value = opt.value;
+            el.textContent = opt.label;
+            keySelect.appendChild(el);
+        }
+        keySelect.dataset.signature = signature;
+    }
+    if (currentKey && [...keySelect.options].some((o) => o.value === currentKey)) {
+        keySelect.value = currentKey;
+    }
+}
+
+function sendMessage(action, extra) {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (tabs.length === 0) {
             status.textContent = 'No active tab.';
@@ -50,7 +69,7 @@ function sendMessage(action) {
         const activeTabId = tabs[0].id;
         status.textContent = 'Rendering…';
         chrome.runtime.sendMessage(
-            { action, data: currentData(), tabId: activeTabId },
+            Object.assign({ action, data: currentData(), tabId: activeTabId }, extra || {}),
             (response) => {
                 if (chrome.runtime.lastError) {
                     status.textContent = chrome.runtime.lastError.message;
@@ -64,6 +83,7 @@ function sendMessage(action) {
                     status.textContent = response.error;
                     return;
                 }
+                if (response.keyOptions) rebuildKeyOptions(response.keyOptions, response.currentKey);
                 if (response.pdfDataUrl) showPreview(response.pdfDataUrl);
             }
         );
@@ -109,4 +129,16 @@ document.getElementById('decrease').addEventListener('click', () => {
 
 document.getElementById('openTab').addEventListener('click', () => {
     sendMessage('openTab');
+});
+
+keySelect.addEventListener('change', () => {
+    const choice = keySelect.value;
+    if (choice.length > 1 && choice[1] === 'b') {
+        preferFlats.checked = true;
+        chrome.storage.sync.set({ preferFlats: true });
+    } else if (choice.length > 1 && choice[1] === '#') {
+        preferFlats.checked = false;
+        chrome.storage.sync.set({ preferFlats: false });
+    }
+    sendMessage('setKey', { targetKey: choice });
 });
