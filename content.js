@@ -637,28 +637,30 @@ function parseSongFromPage() {
                     c.classList.contains("flex") &&
                     c.classList.contains("flex-wrap")
             );
-            const lines = lineEls.map((lineEl) => {
-                // Pairs are syllable-level — empty " "/" " pairs are inter-word spacers, keep them.
-                const chordEls = [...lineEl.querySelectorAll(".pt-0.font-semibold")];
-                const chordLyricPairs = chordEls.map((chordEl) => {
-                    const lyricEl = chordEl.nextElementSibling;
-                    const chord = (chordEl.innerText || "").trim();
-                    const lyric = (lyricEl ? lyricEl.innerText : "").replace(
-                        /\s\s+/g,
-                        " "
-                    );
-                    return [chord + " ", lyric || " "];
-                });
-                // Drop leading whitespace-only pairs so lines start flush.
-                while (
-                    chordLyricPairs.length > 0 &&
-                    chordLyricPairs[0][0].trim() === "" &&
-                    chordLyricPairs[0][1].trim() === ""
-                ) {
-                    chordLyricPairs.shift();
-                }
-                return { chordLyricPairs };
-            });
+            const lines = lineEls
+                .map((lineEl) => {
+                    // Pairs are syllable-level — empty " "/" " pairs are inter-word spacers, keep them.
+                    const chordEls = [...lineEl.querySelectorAll(".pt-0.font-semibold")];
+                    const chordLyricPairs = chordEls.map((chordEl) => {
+                        const lyricEl = chordEl.nextElementSibling;
+                        const chord = (chordEl.innerText || "").trim();
+                        const lyric = (lyricEl ? lyricEl.innerText : "").replace(
+                            /\s\s+/g,
+                            " "
+                        );
+                        return [chord + " ", lyric || " "];
+                    });
+                    // Drop leading whitespace-only pairs so lines start flush.
+                    while (
+                        chordLyricPairs.length > 0 &&
+                        chordLyricPairs[0][0].trim() === "" &&
+                        chordLyricPairs[0][1].trim() === ""
+                    ) {
+                        chordLyricPairs.shift();
+                    }
+                    return { chordLyricPairs };
+                })
+                .filter((l) => l.chordLyricPairs.length > 0);
             return { header, lines };
         });
         song = new SongTab({ artist, title, sections, key: detectedKey });
