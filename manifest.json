@@ -2,11 +2,12 @@
     "manifest_version": 3,
     "name": "ChordMaker",
     "version": "1.0",
-    "description": "A simple Chrome extension to download worship chord sheets as pdfs from popular websites like tabs.ultimate-guitar.com, worshiptogether.com, and app.theworshipinitiative.com",
+    "description": "A simple Chrome extension to download worship chord sheets as pdfs from popular websites like tabs.ultimate-guitar.com, worshiptogether.com, app.theworshipinitiative.com, and psallo.theworshipinitiative.com",
     "content_scripts": [
       {
         "matches": [
           "https://app.theworshipinitiative.com/*",
+          "https://psallo.theworshipinitiative.com/*",
           "https://www.worshiptogether.com/*",
           "https://tabs.ultimate-guitar.com/*"
         ],

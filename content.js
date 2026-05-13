@@ -610,6 +610,58 @@ function parseSongFromPage() {
             return { header, lines };
         });
         song = new SongTab({ artist, title, sections });
+    } else if (host === "psallo.theworshipinitiative.com") {
+        const titleEl = document.querySelector("h1");
+        const title = titleEl ? titleEl.innerText.trim() : "Untitled";
+        // After the H1, the next sibling holds: <a>album</a> • <span><a>artist</a>, <a>songwriter</a>...</span>
+        // First /home/contributors/... link is the recording artist.
+        let artist = "Unknown";
+        if (titleEl) {
+            const metaContainer = titleEl.parentElement;
+            const contribLink = metaContainer
+                ? metaContainer.querySelector('a[href^="/home/contributors"]')
+                : null;
+            if (contribLink) artist = contribLink.innerText.trim();
+        }
+        const keyEl = document.querySelector('[data-testid="key-selector-current-key"]');
+        const detectedKey = keyEl ? keyEl.innerText.trim() : undefined;
+
+        const sectionElems = document.querySelectorAll(".song-chord-chart-section");
+        const sections = [...sectionElems].map((s) => {
+            const headerEl = s.firstElementChild;
+            const header = (headerEl && headerEl.innerText.trim()) || "UNKNOWN";
+            // Each subsequent child with "flex flex-wrap" is one rendered line.
+            const lineEls = [...s.children].filter(
+                (c) =>
+                    c !== headerEl &&
+                    c.classList.contains("flex") &&
+                    c.classList.contains("flex-wrap")
+            );
+            const lines = lineEls.map((lineEl) => {
+                // Pairs are syllable-level — empty " "/" " pairs are inter-word spacers, keep them.
+                const chordEls = [...lineEl.querySelectorAll(".pt-0.font-semibold")];
+                const chordLyricPairs = chordEls.map((chordEl) => {
+                    const lyricEl = chordEl.nextElementSibling;
+                    const chord = (chordEl.innerText || "").trim();
+                    const lyric = (lyricEl ? lyricEl.innerText : "").replace(
+                        /\s\s+/g,
+                        " "
+                    );
+                    return [chord + " ", lyric || " "];
+                });
+                // Drop leading whitespace-only pairs so lines start flush.
+                while (
+                    chordLyricPairs.length > 0 &&
+                    chordLyricPairs[0][0].trim() === "" &&
+                    chordLyricPairs[0][1].trim() === ""
+                ) {
+                    chordLyricPairs.shift();
+                }
+                return { chordLyricPairs };
+            });
+            return { header, lines };
+        });
+        song = new SongTab({ artist, title, sections, key: detectedKey });
     } else if (host === "www.worshiptogether.com" || host === "worshiptogether.com") {
         const songDetails = document.querySelector(".t-song-details__marquee");
         const title = songDetails
